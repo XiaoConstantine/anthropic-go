@@ -147,6 +147,6 @@ func GetModelID(name string) (ModelID, bool) {
 }
 
 // Create sends a request to create a new message.
-func (s *MessagesService) Create(params *MessageParams) (*Message, error) {
-	return s.client.Create(context.Background(), params)
+func (s *MessagesService) Create(ctx context.Context, params *MessageParams) (*Message, error) {
+	return s.client.Create(ctx, params)
 }
