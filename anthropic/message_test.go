@@ -32,7 +32,9 @@ func TestMessagesService_Create(t *testing.T) {
 
 		// Send response
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
+		if err := json.NewEncoder(w).Encode(response); err != nil {
+			return
+		}
 	}))
 	defer server.Close()
 
