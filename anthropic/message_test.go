@@ -57,7 +57,7 @@ func TestMessagesService_Create(t *testing.T) {
 		},
 	}
 
-	message, err := client.Messages().Create(params)
+	message, err := client.Messages().Create(context.Background(), params)
 	if err != nil {
 		t.Fatalf("Failed to create message: %v", err)
 	}
@@ -137,7 +137,7 @@ func TestMessagesService_CreateStreaming(t *testing.T) {
 		},
 	}
 
-	message, err := client.Messages().Create(params)
+	message, err := client.Messages().Create(context.Background(), params)
 	if err != nil {
 		t.Fatalf("Failed to create streaming message: %v", err)
 	}
