@@ -1,6 +1,7 @@
 Anthropic Go Client
 -------------------
 
+Go sdk for interacting with anthropic API
 
 
 Example
@@ -10,7 +11,7 @@ Example
 ----
 
 ```go
-// Create a new client
+	// Create a new client
 	client, err := anthropic.NewClient(
 		anthropic.WithAPIKey(""), // This will use the ANTHROPIC_API_KEY environment variable
 		anthropic.WithTimeout(30*time.Second),
@@ -62,7 +63,7 @@ Example
 --------
 
 ```go
-  // Streaming response
+  	// Streaming response
 	fmt.Println("Streaming message response:")
 	message, err = client.Messages().Create(context.Background(), &anthropic.MessageParams{
 		Model: string(anthropic.ModelSonnet), // Use the Sonnet model
