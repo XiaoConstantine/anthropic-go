@@ -31,8 +31,8 @@ func (s *Client) Create(ctx context.Context, params *MessageParams) (*Message, e
 	req.Header.Set("X-API-Key", s.APIKey)
 	req.Header.Set("anthropic-version", s.APIVersion)
 
-	// Set Accept header based on whether streaming is requested
-	if params.Stream != nil {
+	// Set Accep header based on whether streaming is requested
+	if params.IsStreaming() {
 		req.Header.Set("Accept", "text/event-stream")
 	} else {
 		req.Header.Set("Accept", "application/json")
@@ -49,7 +49,7 @@ func (s *Client) Create(ctx context.Context, params *MessageParams) (*Message, e
 		return nil, fmt.Errorf("API request failed with status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
-	if params.Stream != nil {
+	if params.IsStreaming() {
 		return parseStreamingMessageResponse(ctx, resp.Body, params)
 	}
 
@@ -68,36 +68,45 @@ type MessageEvent struct {
 }
 
 func parseStreamingMessageResponse(ctx context.Context, r io.Reader, payload *MessageParams) (*Message, error) {
+
 	scanner := bufio.NewScanner(r)
-	var response MessageResponsePayload
+	eventChan := make(chan MessageEvent)
 
-	for scanner.Scan() {
-		line := scanner.Text()
-		if line == "" || !strings.HasPrefix(line, "data:") {
-			continue
-		}
-		data := strings.TrimPrefix(line, "data: ")
-		event, err := parseStreamEvent(data)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse stream event: %w", err)
-		}
-		response, err = processStreamEvent(ctx, event, payload, response)
-		if err != nil {
-			return nil, fmt.Errorf("failed to process stream event: %w", err)
-		}
+	go func() {
 
-		if payload.Stream != nil {
-			if err := payload.Stream(ctx, []byte(data)); err != nil {
-				return nil, fmt.Errorf("stream function error: %w", err)
+		defer close(eventChan)
+		var response MessageResponsePayload
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			if line == "" || !strings.HasPrefix(line, "data:") {
+				continue
+			}
+			data := strings.TrimPrefix(line, "data: ")
+			event, err := parseStreamEvent(data)
+			if err != nil {
+				eventChan <- MessageEvent{Response: nil, Err: fmt.Errorf("failed to parse stream event: %w", err)}
+				return
+			}
+			response, err = processStreamEvent(ctx, event, payload, response, eventChan)
+			if err != nil {
+				eventChan <- MessageEvent{Response: nil, Err: fmt.Errorf("failed to process stream event: %w", err)}
+				return
 			}
 		}
-	}
+		if err := scanner.Err(); err != nil {
+			eventChan <- MessageEvent{Response: nil, Err: fmt.Errorf("issue scanning response: %w", err)}
+		}
+	}()
 
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("issue scanning response: %w", err)
+	var lastResponse *MessageResponsePayload
+	for event := range eventChan {
+		if event.Err != nil {
+			return nil, event.Err
+		}
+		lastResponse = event.Response
 	}
-
-	return convertToMessage(&response), nil
+	return convertToMessage(lastResponse), nil
 }
 
 func parseStreamEvent(data string) (map[string]interface{}, error) {
@@ -106,7 +115,7 @@ func parseStreamEvent(data string) (map[string]interface{}, error) {
 	return event, err
 }
 
-func processStreamEvent(ctx context.Context, event map[string]interface{}, params *MessageParams, response MessageResponsePayload) (MessageResponsePayload, error) {
+func processStreamEvent(ctx context.Context, event map[string]interface{}, payload *MessageParams, response MessageResponsePayload, eventChan chan<- MessageEvent) (MessageResponsePayload, error) {
 	eventType, ok := event["type"].(string)
 	if !ok {
 		return response, fmt.Errorf("invalid event type")
@@ -117,13 +126,14 @@ func processStreamEvent(ctx context.Context, event map[string]interface{}, param
 	case "content_block_start":
 		return handleContentBlockStartEvent(event, response)
 	case "content_block_delta":
-		return handleContentBlockDeltaEvent(event, response)
+		return handleContentBlockDeltaEvent(ctx, event, payload, response)
 	case "content_block_stop":
 		// Nothing to do here
 	case "message_delta":
 		return handleMessageDeltaEvent(event, response)
 	case "message_stop":
 		// Nothing to do here
+		eventChan <- MessageEvent{Response: &response, Err: nil}
 	case "ping":
 		// Nothing to do here
 	default:
@@ -179,7 +189,7 @@ func handleContentBlockStartEvent(event map[string]interface{}, response Message
 	return response, nil
 }
 
-func handleContentBlockDeltaEvent(event map[string]interface{}, response MessageResponsePayload) (MessageResponsePayload, error) {
+func handleContentBlockDeltaEvent(ctx context.Context, event map[string]interface{}, payload *MessageParams, response MessageResponsePayload) (MessageResponsePayload, error) {
 	indexValue, ok := event["index"].(float64)
 	if !ok {
 		return response, fmt.Errorf("invalid index field")
@@ -201,6 +211,17 @@ func handleContentBlockDeltaEvent(event map[string]interface{}, response Message
 			})
 		} else {
 			response.Content[index].Text += text
+		}
+	}
+
+	if payload.IsStreaming() {
+		text, ok := delta["text"].(string)
+		if !ok {
+			return response, fmt.Errorf("invalid delta data")
+		}
+		err := payload.StreamFunc(ctx, []byte(text))
+		if err != nil {
+			return response, fmt.Errorf("streaming func returned an error: %w", err)
 		}
 	}
 

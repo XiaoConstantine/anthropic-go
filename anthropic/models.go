@@ -2,6 +2,7 @@ package anthropic
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 )
 
@@ -48,7 +49,22 @@ type MessageParams struct {
 	TopK          int                                 `json:"top_k,omitempty"`
 	StopSequences []string                            `json:"stop_sequences,omitempty"`
 	Metadata      map[string]interface{}              `json:"metadata,omitempty"`
-	Stream        func(context.Context, []byte) error `json:"-"`
+	StreamFunc    func(context.Context, []byte) error `json:"-"`
+}
+
+func (p *MessageParams) IsStreaming() bool {
+	return p.StreamFunc != nil
+}
+
+func (p *MessageParams) MarshalJSON() ([]byte, error) {
+	type Alias MessageParams
+	return json.Marshal(&struct {
+		*Alias
+		Stream bool `json:"stream"`
+	}{
+		Alias:  (*Alias)(p),
+		Stream: p.IsStreaming(),
+	})
 }
 
 // MessageParam represents a single message in the conversation history.
