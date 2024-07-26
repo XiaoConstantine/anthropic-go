@@ -1,5 +1,10 @@
 version: 2
 
+project_name: anthropic-go
+
+builds:
+  - skip: true
+
 changelog:
   sort: asc
   filters:
@@ -15,6 +20,3 @@ release:
   github:
     owner: XiaoConstantine
     name: anthropic-go
-  prerelease: auto
-
-dist: clean
