@@ -150,8 +150,3 @@ func GetModelID(name string) (ModelID, bool) {
 func (s *MessagesService) Create(params *MessageParams) (*Message, error) {
 	return s.client.Create(context.Background(), params)
 }
-
-// Stream streams messages from the API.
-// func (s *MessagesService) Stream(params *MessageParams) (<-chan MessageStreamEvent, <-chan error) {
-// 	return s.client.StreamMessages(params)
-// }

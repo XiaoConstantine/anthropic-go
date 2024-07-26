@@ -121,85 +121,24 @@ type ToolOutput struct {
 	Output     string `json:"output"`
 }
 
-// MessageStreamEvent represents an event in the message stream.
-type MessageStreamEvent struct {
-	Type    string `json:"type"`
-	Message struct {
-		ID           string         `json:"id"`
-		Type         string         `json:"type"`
-		Role         string         `json:"role"`
-		Model        string         `json:"model"`
-		Content      []ContentBlock `json:"content"`
-		StopReason   *string        `json:"stop_reason"`
-		StopSequence *string        `json:"stop_sequence"`
-		Usage        struct {
-			InputTokens  int `json:"input_tokens"`
-			OutputTokens int `json:"output_tokens"`
-		} `json:"usage"`
-	} `json:"message,omitempty"`
-	Index        int `json:"index,omitempty"`
-	ContentBlock struct {
-		Type string `json:"type"`
-		Text string `json:"text"`
-	} `json:"content_block,omitempty"`
-	Delta struct {
-		Type         string  `json:"type,omitempty"`
-		Text         string  `json:"text,omitempty"`
-		StopReason   *string `json:"stop_reason,omitempty"`
-		StopSequence *string `json:"stop_sequence,omitempty"`
-	} `json:"delta,omitempty"`
-	Usage struct {
-		OutputTokens int `json:"output_tokens,omitempty"`
-	} `json:"usage,omitempty"`
-}
-
 // Error represents an error returned by the API.
 type Error struct {
 	Type    string `json:"type"`
 	Message string `json:"message"`
 }
 
-// APIResponse represents a generic API response.
-type APIResponse struct {
-	Object string `json:"object"`
-	Data   []struct {
-		ID        string    `json:"id"`
-		Object    string    `json:"object"`
-		CreatedAt time.Time `json:"created_at"`
-	} `json:"data"`
-}
-
-type MessageResponsePayload struct {
-	Content      []ContentBlock `json:"content"`
-	ID           string         `json:"id"`
-	Model        string         `json:"model"`
-	Role         string         `json:"role"`
-	StopReason   string         `json:"stop_reason"`
-	StopSequence string         `json:"stop_sequence"`
-	Type         string         `json:"type"`
-	Usage        struct {
-		InputTokens  int `json:"input_tokens"`
-		OutputTokens int `json:"output_tokens"`
-	} `json:"usage"`
-}
-
-// Model represents an AI model available in the Anthropic API.
-type Model struct {
-	ID        ModelID `json:"id"`
-	Name      string  `json:"name"`
-	Created   int64   `json:"created"`
-	Owned     bool    `json:"owned"`
-	Supported bool    `json:"supported"`
-}
-
-// ModelsResponse represents the response from the models endpoint.
-type ModelsResponse struct {
-	Object string  `json:"object"`
-	Data   []Model `json:"data"`
+type MessageEvent struct {
+	Response *Message
+	Err      error
 }
 
 // ModelID represents the available model IDs.
 type ModelID string
+
+type Model struct {
+	ID   ModelID `json:"id"`
+	Name string  `json:"name"`
+}
 
 const (
 	ModelHaiku  ModelID = "claude-3-haiku-20240307"
