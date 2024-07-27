@@ -28,7 +28,7 @@ jobs:
       - name: Generate documentation
         run: |
           mkdir -p _site
-          go doc -all ./... > _site/index.html
+          go doc -all . > _site/index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
 
