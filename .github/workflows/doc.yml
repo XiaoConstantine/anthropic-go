@@ -32,21 +32,20 @@ jobs:
       - name: Generate documentation
         run: |
           go install golang.org/x/tools/cmd/godoc@latest
+          mkdir -p temp_docs
           godoc -http=:6060 &
           sleep 5
-          if ! curl -s http://localhost:6060/pkg/github.com/XiaoConstantine/anthropic-go/ > /dev/null; then
-            echo "Failed to generate documentation"
-            exit 1
-          fi
+          wget -r -k -E -p -nH -P temp_docs http://localhost:6060/pkg/github.com/XiaoConstantine/anthropic-go/
           pkill godoc
-
           # Run go vet
           go vet ./...
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/main'
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs
-          force_orphan: true
+          source: ./temp_docs
+          destination: ./_site
+      - name: Deploy to GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/deploy-pages@v2
