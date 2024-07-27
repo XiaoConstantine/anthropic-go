@@ -27,12 +27,8 @@ jobs:
           args: --enable=godot
       - name: Generate documentation
         run: |
-          go install golang.org/x/pkgsite/cmd/pkgsite@latest
           mkdir -p _site
-          pkgsite -http=:6060 &
-          sleep 5
-          wget -r -k -E -p -nH -P _site http://localhost:6060/github.com/XiaoConstantine/anthropic-go
-          pkill pkgsite
+          go doc -all ./... > _site/index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
 
