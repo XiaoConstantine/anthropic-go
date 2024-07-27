@@ -1,0 +1,41 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  docs-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: "go.mod"
+
+      - name: Check documentation syntax
+        run: go doc ./... > /dev/null
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          args: --enable=godot
+
+      - name: Generate documentation
+        run: |
+          go install golang.org/x/tools/cmd/godoc@latest
+          godoc -http=:6060 &
+          sleep 5
+          wget -r -k -E -p -nH -P ./docs http://localhost:6060/pkg/github.com/yourusername/anthropic-go-sdk/
+          pkill godoc
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
