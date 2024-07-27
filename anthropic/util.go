@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// parseStreamingMessageResponse handles the parsing of streaming message responses.
 func parseStreamingMessageResponse(ctx context.Context, r io.Reader, payload *MessageParams) (*Message, error) {
 	scanner := bufio.NewScanner(r)
 	eventChan := make(chan MessageEvent)
@@ -49,12 +50,14 @@ func parseStreamingMessageResponse(ctx context.Context, r io.Reader, payload *Me
 	return lastResponse, nil
 }
 
+// parseStreamEvent parses a single stream event from JSON data.
 func parseStreamEvent(data string) (map[string]interface{}, error) {
 	var event map[string]interface{}
 	err := json.Unmarshal([]byte(data), &event)
 	return event, err
 }
 
+// processStreamEvent handles different types of stream events and updates the response accordingly.
 func processStreamEvent(ctx context.Context, event map[string]interface{}, payload *MessageParams, response Message, eventChan chan<- MessageEvent) (Message, error) {
 	eventType, ok := event["type"].(string)
 	if !ok {

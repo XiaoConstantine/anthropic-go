@@ -52,10 +52,12 @@ type MessageParams struct {
 	StreamFunc    func(context.Context, []byte) error `json:"-"`
 }
 
+// IsStreaming returns true if the MessageParams is configured for streaming.
 func (p *MessageParams) IsStreaming() bool {
 	return p.StreamFunc != nil
 }
 
+// MarshalJSON implements custom JSON marshaling for MessageParams.
 func (p *MessageParams) MarshalJSON() ([]byte, error) {
 	type Alias MessageParams
 	return json.Marshal(&struct {
@@ -127,6 +129,7 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+// MessageEvent represents an event in the message streaming process.
 type MessageEvent struct {
 	Response *Message
 	Err      error
@@ -135,11 +138,13 @@ type MessageEvent struct {
 // ModelID represents the available model IDs.
 type ModelID string
 
+// Model represents an Anthropic AI model.
 type Model struct {
 	ID   ModelID `json:"id"`
 	Name string  `json:"name"`
 }
 
+// Constants for available model IDs.
 const (
 	ModelHaiku  ModelID = "claude-3-haiku-20240307"
 	ModelSonnet ModelID = "claude-3-sonnet-20240229"

@@ -1,4 +1,19 @@
+// Package anthropic provides a Go client for interacting with the Anthropic API.
 package anthropic
+
+/*
+This file contains the main Client struct and related functionality for
+configuring and using the Anthropic API client. It includes methods for
+creating a new client, setting various options, and accessing different
+services provided by the API.
+
+Key components:
+- Client: The main struct for interacting with the Anthropic API
+- ClientOption: A type for configuring the client
+- NewClient: Function to create a new client
+- Various WithX functions for setting client options
+- ModelsService and MessagesService: Structs for accessing specific API functionalities
+*/
 
 import (
 	"context"
@@ -36,7 +51,6 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 		},
 	}
 
-	// Apply any custom options
 	for _, opt := range opts {
 		if err := opt(client); err != nil {
 			return nil, err

@@ -11,7 +11,8 @@ import (
 
 const messagesEndpoint = "/messages"
 
-// CreateMessage sends a request to create a new message.
+// Create sends a request to create a new message.
+// It handles both streaming and non-streaming responses based on the MessageParams.
 func (s *Client) Create(ctx context.Context, params *MessageParams) (*Message, error) {
 	url := s.baseURL + messagesEndpoint
 
