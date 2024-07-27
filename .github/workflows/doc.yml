@@ -18,7 +18,7 @@ jobs:
           go-version-file: "go.mod"
 
       - name: Check documentation syntax
-        run: go doc ./... > /dev/null
+        run: go doc . > /dev/null
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v3
@@ -30,8 +30,14 @@ jobs:
           go install golang.org/x/tools/cmd/godoc@latest
           godoc -http=:6060 &
           sleep 5
-          wget -r -k -E -p -nH -P ./docs http://localhost:6060/pkg/github.com/yourusername/anthropic-go-sdk/
+          if ! curl -s http://localhost:6060/pkg/github.com/yourusername/anthropic-go-sdk/ > /dev/null; then
+            echo "Failed to generate documentation"
+            exit 1
+          fi
           pkill godoc
+
+          # Run go vet
+          go vet ./...
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
