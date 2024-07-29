@@ -97,7 +97,7 @@ Example
 
 ```go
 
-// Read the image file
+	// Read the image file
 	imageData, err := ioutil.ReadFile("/<path_to_image>/image.png")
 	if err != nil {
 		log.Fatalf("Failed to read image file: %v", err)
@@ -146,4 +146,4 @@ Example
 			fmt.Println(content.Text)
 		}
 	}
-	```
+```
