@@ -4,6 +4,7 @@ Anthropic Go Client
 [![Go Report Card](https://goreportcard.com/badge/github.com/XiaoConstantine/anthropic-go)](https://goreportcard.com/report/github.com/XiaoConstantine/anthropic-go)
 [![codecov](https://codecov.io/gh/XiaoConstantine/anthropic-go/graph/badge.svg?token=DZCEY7IFBG)](https://codecov.io/gh/XiaoConstantine/anthropic-go)
 [![Documentation](https://github.com/XiaoConstantine/anthropic-go/actions/workflows/doc.yml/badge.svg)](https://github.com/XiaoConstantine/anthropic-go/actions/workflows/doc.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/XiaoConstantine/anthropic-go.svg)](https://pkg.go.dev/github.com/XiaoConstantine/anthropic-go)
 
 Go sdk for interacting with anthropic API
 
