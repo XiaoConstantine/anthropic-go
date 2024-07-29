@@ -92,3 +92,58 @@ Example
 
 	fmt.Printf("\nFinal message: %+v\n", message)
 ```
+
+* Image
+
+```go
+
+// Read the image file
+	imageData, err := ioutil.ReadFile("/<path_to_image>/image.png")
+	if err != nil {
+		log.Fatalf("Failed to read image file: %v", err)
+	}
+
+	// Encode the image data to base64
+	base64Image := base64.StdEncoding.EncodeToString(imageData)
+
+	// Create the message params
+	params := &anthropic.MessageParams{
+		Model:     string(anthropic.ModelSonnet), // model has vision capability
+		MaxTokens: 4096,
+		Messages: []anthropic.MessageParam{
+			{
+				Role: "user",
+				Content: []anthropic.ContentBlock{
+					{
+						Type: "text",
+						Text: "Here's an image. Can you describe it?",
+					},
+					{
+						Type: "image",
+						Source: &anthropic.Image{
+							Type:      "base64",
+							MediaType: "image/png", // Adjust based on your image type
+							Data:      base64Image,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Send the request
+	message, err := client.Messages().Create(context.Background(), params)
+	if err != nil {
+		log.Fatalf("Failed to create message: %v", err)
+	}
+
+	// Print the response
+	fmt.Printf("Response: %+v\n", message)
+
+	// If you want to print just the text content:
+	for _, content := range message.Content {
+		if content.Type == "text" {
+			fmt.Println(content.Text)
+		}
+	}
+	```

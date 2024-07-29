@@ -8,9 +8,9 @@ import (
 
 // ContentBlock represents a block of content in a message.
 type ContentBlock struct {
-	Type  string `json:"type"`
-	Text  string `json:"text,omitempty"`
-	Image *Image `json:"image,omitempty"`
+	Type   string `json:"type"`
+	Text   string `json:"text,omitempty"`
+	Source *Image `json:"source,omitempty"`
 }
 
 // Image represents an image in a content block.
