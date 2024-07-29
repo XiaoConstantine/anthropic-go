@@ -8,22 +8,34 @@ Anthropic Go Client
 Go sdk for interacting with anthropic API
 
 
-Example
+Installation
+------------
+
+```bash
+go get github.com/XiaoConstantine/anthropic-go
+
+```
+
+Usage
 ------
 
-* List
-----
+### Creating a Client
+```go
+client, err := anthropic.NewClient(
+    anthropic.WithAPIKey(""), // Uses the ANTHROPIC_API_KEY environment variable if empty
+    anthropic.WithTimeout(30*time.Second),
+)
+if err != nil {
+    log.Fatalf("Failed to create client: %v", err)
+}
+```
+
+
+### Interacting with Models
+
+#### Listing Available Models
 
 ```go
-	// Create a new client
-	client, err := anthropic.NewClient(
-		anthropic.WithAPIKey(""), // This will use the ANTHROPIC_API_KEY environment variable
-		anthropic.WithTimeout(30*time.Second),
-	)
-	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
-	}
-
 	// List available models - Since there's no public api for this, currently the result is
 	// hard coded
 	models, _ := client.Models().List()
@@ -34,11 +46,12 @@ Example
 	fmt.Println()
 ```
 
-* Message
+### Working with Messages
+
+#### Sending a basic Message
 -------
 
 ```go
-	// Send a regular message
 	message, err := client.Messages().Create(&anthropic.MessageParams{
 		Model: string(anthropic.ModelSonnet), // Use the Sonnet model
 		Messages: []anthropic.MessageParam{
@@ -49,7 +62,7 @@ Example
 				},
 			},
 		},
-		MaxTokens: 1000,
+		MaxTokens: 2048,
 	})
 	if err != nil {
 		log.Fatalf("Failed to create message: %v", err)
@@ -63,12 +76,9 @@ Example
 	fmt.Println()
 ```
 
-* Streaming
---------
+#### Streaming Response
 
 ```go
-  	// Streaming response
-	fmt.Println("Streaming message response:")
 	message, err = client.Messages().Create(context.Background(), &anthropic.MessageParams{
 		Model: string(anthropic.ModelSonnet), // Use the Sonnet model
 		Messages: []anthropic.MessageParam{
@@ -79,7 +89,7 @@ Example
 				},
 			},
 		},
-		MaxTokens: 1000,
+		MaxTokens: 2048,
 		StreamFunc: func(ctx context.Context, chunk []byte) error {
 			fmt.Print(string(chunk))
 			return nil
@@ -93,11 +103,10 @@ Example
 	fmt.Printf("\nFinal message: %+v\n", message)
 ```
 
-* Image
+### Handling Images
 
+#### Processing an Image
 ```go
-
-	// Read the image file
 	imageData, err := ioutil.ReadFile("/<path_to_image>/image.png")
 	if err != nil {
 		log.Fatalf("Failed to read image file: %v", err)
@@ -147,3 +156,7 @@ Example
 		}
 	}
 ```
+
+License
+-------
+MIT
