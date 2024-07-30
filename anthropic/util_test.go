@@ -866,8 +866,12 @@ func assertContentBlocksEqual(t *testing.T, expected, actual ContentBlock) {
 
 		expectedJSON := make(map[string]interface{})
 		actualJSON := make(map[string]interface{})
-		json.Unmarshal(expected.ToolCall.Input, &expectedJSON)
-		json.Unmarshal(actual.ToolCall.Input, &actualJSON)
+		if err := json.Unmarshal(expected.ToolCall.Input, &expectedJSON); err != nil {
+			return
+		}
+		if err := json.Unmarshal(actual.ToolCall.Input, &actualJSON); err != nil {
+			return
+		}
 		if !reflect.DeepEqual(expectedJSON, actualJSON) {
 			t.Errorf("Expected tool call input %v, got %v", expectedJSON, actualJSON)
 		}
