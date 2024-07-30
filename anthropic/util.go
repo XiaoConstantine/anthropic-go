@@ -123,12 +123,37 @@ func handleContentBlockStartEvent(event map[string]interface{}, response Message
 	}
 
 	contentType := getString(contentBlock, "type")
-
-	if len(response.Content) <= index {
-		response.Content = append(response.Content, ContentBlock{
+	switch contentType {
+	case "text":
+		if len(response.Content) <= index {
+			response.Content = append(response.Content, ContentBlock{
+				Type: contentType,
+			})
+		}
+	case "tool_use":
+		toolUse := &ToolCall{
 			Type: contentType,
-		})
+			ID:   getString(contentBlock, "id"),
+			Name: getString(contentBlock, "name"),
+		}
+		if input, ok := contentBlock["input"]; ok {
+			inputJSON, err := json.Marshal(input)
+			if err != nil {
+				return response, fmt.Errorf("failed to marshal tool call input: %w", err)
+			}
+			toolUse.Input = json.RawMessage(inputJSON)
+		}
+		response.Content = append(response.Content, ContentBlock{Type: contentType, ToolCall: toolUse})
+	case "tool_result":
+		toolResult := &ToolOutput{
+			ToolCallID: getString(contentBlock, "tool_call_id"),
+			Output:     getString(contentBlock, "output"),
+		}
+		response.Content = append(response.Content, ContentBlock{Type: contentType, ToolOutput: toolResult})
+	default:
+		return response, fmt.Errorf("unknown content block type: %s", contentType)
 	}
+
 	return response, nil
 }
 
@@ -145,7 +170,8 @@ func handleContentBlockDeltaEvent(ctx context.Context, event map[string]interfac
 	}
 	deltaType := getString(delta, "type")
 
-	if deltaType == "text_delta" {
+	switch deltaType {
+	case "text_delta":
 		text := getString(delta, "text")
 		if len(response.Content) <= index {
 			response.Content = append(response.Content, ContentBlock{
@@ -155,14 +181,48 @@ func handleContentBlockDeltaEvent(ctx context.Context, event map[string]interfac
 		} else {
 			response.Content[index].Text += text
 		}
+	case "tool_use_delta":
+		if len(response.Content) <= index || response.Content[index].ToolCall == nil {
+			return response, fmt.Errorf("invalid tool_use_delta: no corresponding tool_use block")
+		}
+		if input, ok := delta["input"].(map[string]interface{}); ok {
+			var existingInput map[string]interface{}
+			err := json.Unmarshal(response.Content[index].ToolCall.Input, &existingInput)
+			if err != nil {
+				return response, fmt.Errorf("failed to unmarshal existing input: %w", err)
+			}
+			// Merge the new input with the existing input
+			for k, v := range input {
+				existingInput[k] = v
+			}
+			updatedInput, err := json.Marshal(existingInput)
+			if err != nil {
+				return response, fmt.Errorf("failed to marshal updated input: %w", err)
+			}
+			response.Content[index].ToolCall.Input = json.RawMessage(updatedInput)
+		}
+	case "tool_result_delta":
+		if len(response.Content) <= index || response.Content[index].ToolOutput == nil {
+			return response, fmt.Errorf("invalid tool_result_delta: no corresponding tool_result block")
+		}
+		if content, ok := delta["content"].(string); ok {
+			response.Content[index].ToolOutput.Output += content
+		}
+	default:
+		return response, fmt.Errorf("unknown delta type: %s", deltaType)
 	}
 
 	if payload.IsStreaming() {
-		text, ok := delta["text"].(string)
-		if !ok {
-			return response, fmt.Errorf("invalid delta data")
+		var streamContent []byte
+		switch deltaType {
+		case "text_delta":
+			streamContent = []byte(delta["text"].(string))
+		case "tool_call_delta":
+			streamContent, _ = json.Marshal(delta)
+		case "tool_output_delta":
+			streamContent = []byte(delta["output"].(string))
 		}
-		err := payload.StreamFunc(ctx, []byte(text))
+		err := payload.StreamFunc(ctx, streamContent)
 		if err != nil {
 			return response, fmt.Errorf("streaming func returned an error: %w", err)
 		}

@@ -153,3 +153,115 @@ func TestMessagesService_CreateStreaming(t *testing.T) {
 		t.Errorf("Unexpected message content: %+v", message.Content)
 	}
 }
+
+func TestMessagesService_CreateWithTools(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			t.Errorf("Expected 'POST' request, got '%s'", r.Method)
+		}
+
+		if r.Header.Get("X-API-Key") != "test-key" {
+			t.Errorf("Expected API Key header 'test-key', got '%s'", r.Header.Get("X-API-Key"))
+		}
+
+		var requestBody MessageParams
+		err := json.NewDecoder(r.Body).Decode(&requestBody)
+		if err != nil {
+			t.Fatalf("Failed to decode request body: %v", err)
+		}
+
+		if len(requestBody.Tools) != 1 || requestBody.Tools[0].Name != "get_stock_price" {
+			t.Errorf("Expected one tool named 'get_stock_price', got: %+v", requestBody.Tools)
+		}
+
+		response := Message{
+			ID:   "msg_123",
+			Role: "assistant",
+			Content: []ContentBlock{
+				{
+					Type: "text",
+					Text: "Certainly! I'll check the current S&P 500 price for you.",
+				},
+				{
+					Type: "tool_call",
+					ToolCall: &ToolCall{
+						ID:   "call_123",
+						Type: "function",
+						Name: "get_stock_price",
+						Input: json.RawMessage(`{
+                            "ticker": "^GSPC"
+                        }`),
+					},
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
+	}))
+	defer server.Close()
+
+	client, _ := NewClient(
+		WithAPIKey("test-key"),
+		WithBaseURL(server.URL),
+	)
+
+	params := &MessageParams{
+		Model: string(ModelSonnet),
+		Messages: []MessageParam{
+			{
+				Role: "user",
+				Content: []ContentBlock{
+					{Type: "text", Text: "What's the S&P 500 at today?"},
+				},
+			},
+		},
+		Tools: []Tool{
+			{
+				Name:        "get_stock_price",
+				Description: "Get the current stock price for a given ticker symbol.",
+				InputSchema: InputSchema{
+					Type: "object",
+					Properties: map[string]interface{}{
+						"ticker": map[string]interface{}{
+							"type":        "string",
+							"description": "The stock ticker symbol, e.g. AAPL for Apple Inc.",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	message, err := client.Messages().Create(context.Background(), params)
+	if err != nil {
+		t.Fatalf("Failed to create message: %v", err)
+	}
+
+	if message.ID != "msg_123" {
+		t.Errorf("Expected message ID 'msg_123', got '%s'", message.ID)
+	}
+	if message.Role != "assistant" {
+		t.Errorf("Expected role 'assistant', got '%s'", message.Role)
+	}
+	if len(message.Content) != 2 {
+		t.Fatalf("Expected 2 content blocks, got %d", len(message.Content))
+	}
+	if message.Content[0].Type != "text" || message.Content[0].Text != "Certainly! I'll check the current S&P 500 price for you." {
+		t.Errorf("Unexpected text content: %+v", message.Content[0])
+	}
+	if message.Content[1].Type != "tool_call" || message.Content[1].ToolCall == nil {
+		t.Errorf("Expected tool_call content, got: %+v", message.Content[1])
+	}
+	if message.Content[1].ToolCall.Name != "get_stock_price" {
+		t.Errorf("Expected tool call name 'get_stock_price', got '%s'", message.Content[1].ToolCall.Name)
+	}
+	var input map[string]string
+	err = json.Unmarshal(message.Content[1].ToolCall.Input, &input)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal tool call input: %v", err)
+	}
+	if input["ticker"] != "^GSPC" {
+		t.Errorf("Expected ticker '^GSPC', got '%s'", input["ticker"])
+	}
+}

@@ -8,9 +8,11 @@ import (
 
 // ContentBlock represents a block of content in a message.
 type ContentBlock struct {
-	Type   string `json:"type"`
-	Text   string `json:"text,omitempty"`
-	Source *Image `json:"source,omitempty"`
+	Type       string      `json:"type"`
+	Text       string      `json:"text,omitempty"`
+	Source     *Image      `json:"source,omitempty"`
+	ToolCall   *ToolCall   `json:"tool_call,omitempty"`
+	ToolOutput *ToolOutput `json:"tool_output,omitempty"`
 }
 
 // Image represents an image in a content block.
@@ -50,6 +52,7 @@ type MessageParams struct {
 	StopSequences []string                            `json:"stop_sequences,omitempty"`
 	Metadata      map[string]interface{}              `json:"metadata,omitempty"`
 	StreamFunc    func(context.Context, []byte) error `json:"-"`
+	Tools         []Tool                              `json:"tools,omitempty"`
 }
 
 // IsStreaming returns true if the MessageParams is configured for streaming.
@@ -93,28 +96,22 @@ type ImageBlock struct {
 
 // Tool represents a tool that can be used by the model.
 type Tool struct {
-	Type     string       `json:"type"`
-	Function ToolFunction `json:"function"`
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	InputSchema InputSchema `json:"input_schema"`
 }
 
-// ToolFunction represents the function definition of a tool.
-type ToolFunction struct {
-	Name        string                 `json:"name"`
-	Description string                 `json:"description"`
-	Parameters  map[string]interface{} `json:"parameters"`
+type InputSchema struct {
+	Type       string                 `json:"type"`
+	Properties map[string]interface{} `json:"properties"`
 }
 
 // ToolCall represents a call to a tool made by the model.
 type ToolCall struct {
-	ID       string           `json:"id"`
-	Type     string           `json:"type"`
-	Function ToolCallFunction `json:"function"`
-}
-
-// ToolCallFunction represents the function call made by the model.
-type ToolCallFunction struct {
-	Name      string `json:"name"`
-	Arguments string `json:"arguments"`
+	ID    string          `json:"id"`
+	Type  string          `json:"type"`
+	Name  string          `json:"name"`
+	Input json.RawMessage `json:"input"`
 }
 
 // ToolOutput represents the output of a tool call.

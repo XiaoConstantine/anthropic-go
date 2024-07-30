@@ -2,6 +2,7 @@ package anthropic
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -311,7 +312,7 @@ func TestHandleMessageStartEvent(t *testing.T) {
 	}
 }
 
-func TestHandleContentBlockStartEvent(t *testing.T) {
+func TestHandleContentBlockStartEvent_Message(t *testing.T) {
 	testCases := []struct {
 		name     string
 		event    map[string]interface{}
@@ -371,7 +372,7 @@ func TestHandleContentBlockStartEvent(t *testing.T) {
 	}
 }
 
-func TestHandleContentBlockDeltaEvent(t *testing.T) {
+func TestHandleContentBlockDeltaEvent_Message(t *testing.T) {
 	testCases := []struct {
 		name     string
 		event    map[string]interface{}
@@ -500,7 +501,6 @@ func TestHandleMessageDeltaEvent(t *testing.T) {
 		})
 	}
 }
-
 
 func TestGetString(t *testing.T) {
 	testCases := []struct {
@@ -658,5 +658,229 @@ func TestHandleContentBlockDeltaEventWithNewContentBlock(t *testing.T) {
 	}}
 	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("Expected %+v, but got %+v", expected, result)
+	}
+}
+
+func TestHandleContentBlockStartEvent_Tool(t *testing.T) {
+	tests := []struct {
+		name     string
+		event    map[string]interface{}
+		expected ContentBlock
+	}{
+		{
+			name: "Text block",
+			event: map[string]interface{}{
+				"index": float64(0),
+				"content_block": map[string]interface{}{
+					"type": "text",
+				},
+			},
+			expected: ContentBlock{Type: "text"},
+		},
+		{
+			name: "Tool call block",
+			event: map[string]interface{}{
+				"index": float64(0),
+				"content_block": map[string]interface{}{
+					"type": "tool_use",
+					"id":   "call_123",
+					"name": "get_stock_price",
+					"input": map[string]interface{}{
+						"ticker": "^GSPC",
+					},
+				},
+			},
+			expected: ContentBlock{
+				Type: "tool_use",
+				ToolCall: &ToolCall{
+					Type: "tool_use",
+					ID:   "call_123",
+					Name: "get_stock_price",
+					Input: json.RawMessage(`{
+		                      "ticker": "^GSPC"
+		                  }`),
+				},
+			},
+		},
+		{
+			name: "Tool output block",
+			event: map[string]interface{}{
+				"index": float64(0),
+				"content_block": map[string]interface{}{
+					"type":         "tool_result",
+					"tool_call_id": "call_123",
+					"output":       "The current S&P 500 price is 4,000.00",
+				},
+			},
+			expected: ContentBlock{
+				Type: "tool_result",
+				ToolOutput: &ToolOutput{
+					ToolCallID: "call_123",
+					Output:     "The current S&P 500 price is 4,000.00",
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			response, err := handleContentBlockStartEvent(tt.event, Message{})
+			if err != nil {
+				t.Fatalf("handleContentBlockStartEvent returned an error: %v", err)
+			}
+			if len(response.Content) != 1 {
+				t.Fatalf("Expected 1 content block, got %d", len(response.Content))
+			}
+			assertContentBlocksEqual(t, tt.expected, response.Content[0])
+		})
+	}
+}
+
+func TestHandleContentBlockDeltaEvent_Tool(t *testing.T) {
+	tests := []struct {
+		name     string
+		event    map[string]interface{}
+		initial  Message
+		expected ContentBlock
+	}{
+		{
+			name: "Text delta",
+			event: map[string]interface{}{
+				"index": float64(0),
+				"delta": map[string]interface{}{
+					"type": "text_delta",
+					"text": " world",
+				},
+			},
+			initial: Message{
+				Content: []ContentBlock{
+					{Type: "text", Text: "Hello"},
+				},
+			},
+			expected: ContentBlock{Type: "text", Text: "Hello world"},
+		},
+		{
+			name: "Tool call delta",
+			event: map[string]interface{}{
+				"index": float64(0),
+				"delta": map[string]interface{}{
+					"type": "tool_use_delta",
+					"input": map[string]interface{}{
+						"date": "2023-07-01",
+					},
+				},
+			},
+			initial: Message{
+				Content: []ContentBlock{
+					{
+						Type: "tool_use",
+						ToolCall: &ToolCall{
+							ID:   "call_123",
+							Name: "get_stock_price",
+							Input: json.RawMessage(`{
+                                "ticker": "^GSPC"
+                            }`),
+						},
+					},
+				},
+			},
+			expected: ContentBlock{
+				Type: "tool_use",
+				ToolCall: &ToolCall{
+					ID:   "call_123",
+					Name: "get_stock_price",
+					Input: json.RawMessage(`{
+                        "ticker": "^GSPC",
+                        "date": "2023-07-01"
+                    }`),
+				},
+			},
+		},
+		// {
+		// 	name: "Tool output delta",
+		// 	event: map[string]interface{}{
+		// 		"index": float64(0),
+		// 		"delta": map[string]interface{}{
+		// 			"type":   "tool_result_delta",
+		// 			"output": " is 4,000.00",
+		// 		},
+		// 	},
+		// 	initial: Message{
+		// 		Content: []ContentBlock{
+		// 			{
+		// 				Type: "tool_result",
+		// 				ToolOutput: &ToolOutput{
+		// 					ToolCallID: "call_123",
+		// 					Output:     "The current S&P 500 price",
+		// 				},
+		// 			},
+		// 		},
+		// 	},
+		// 	expected: ContentBlock{
+		// 		Type: "tool_result",
+		// 		ToolOutput: &ToolOutput{
+		// 			ToolCallID: "call_123",
+		// 			Output:     "The current S&P 500 price is 4,000.00",
+		// 		},
+		// 	},
+		// },
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			params := &MessageParams{
+				StreamFunc: func(ctx context.Context, chunk []byte) error {
+					return nil
+				},
+			}
+			response, err := handleContentBlockDeltaEvent(context.Background(), tt.event, params, tt.initial)
+			if err != nil {
+				t.Fatalf("handleContentBlockDeltaEvent returned an error: %v", err)
+			}
+			if len(response.Content) != 1 {
+				t.Fatalf("Expected 1 content block, got %d", len(response.Content))
+			}
+			assertContentBlocksEqual(t, tt.expected, response.Content[0])
+		})
+	}
+}
+
+func assertContentBlocksEqual(t *testing.T, expected, actual ContentBlock) {
+	t.Helper()
+	if expected.Type != actual.Type {
+		t.Errorf("Expected content block type %s, got %s", expected.Type, actual.Type)
+	}
+	if expected.Text != actual.Text {
+		t.Errorf("Expected text '%s', got '%s'", expected.Text, actual.Text)
+	}
+	if (expected.ToolCall == nil) != (actual.ToolCall == nil) {
+		t.Errorf("ToolCall mismatch: expected %v, got %v", expected.ToolCall, actual.ToolCall)
+	}
+	if expected.ToolCall != nil {
+		if expected.ToolCall.ID != actual.ToolCall.ID {
+			t.Errorf("Expected tool call ID '%s', got '%s'", expected.ToolCall.ID, actual.ToolCall.ID)
+		}
+		if expected.ToolCall.Name != actual.ToolCall.Name {
+			t.Errorf("Expected tool call name '%s', got '%s'", expected.ToolCall.Name, actual.ToolCall.Name)
+		}
+
+		expectedJSON := make(map[string]interface{})
+		actualJSON := make(map[string]interface{})
+		json.Unmarshal(expected.ToolCall.Input, &expectedJSON)
+		json.Unmarshal(actual.ToolCall.Input, &actualJSON)
+		if !reflect.DeepEqual(expectedJSON, actualJSON) {
+			t.Errorf("Expected tool call input %v, got %v", expectedJSON, actualJSON)
+		}
+	}
+	if (expected.ToolOutput == nil) != (actual.ToolOutput == nil) {
+		t.Errorf("ToolOutput mismatch: expected %v, got %v", expected.ToolOutput, actual.ToolOutput)
+	}
+	if expected.ToolOutput != nil {
+		if expected.ToolOutput.ToolCallID != actual.ToolOutput.ToolCallID {
+			t.Errorf("Expected tool output ID '%s', got '%s'", expected.ToolOutput.ToolCallID, actual.ToolOutput.ToolCallID)
+		}
+		if expected.ToolOutput.Output != actual.ToolOutput.Output {
+			t.Errorf("Expected tool output '%s', got '%s'", expected.ToolOutput.Output, actual.ToolOutput.Output)
+		}
 	}
 }
