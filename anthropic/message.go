@@ -26,6 +26,10 @@ func (s *Client) Create(ctx context.Context, params *MessageParams) (*Message, e
 		return nil, fmt.Errorf("error creating request: %w", err)
 	}
 
+	if params.MaxTokens >= 8192 && params.Model == string(ModelSonnet) {
+		req.Header.Set("anthropic-beta", "max-tokens-3-5-sonnet-2024-07-15")
+	}
+
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-API-Key", s.APIKey)
 	req.Header.Set("anthropic-version", s.APIVersion)
