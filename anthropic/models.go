@@ -33,6 +33,7 @@ type Message struct {
 	StopSequence string         `json:"stop_sequence"`
 	Usage        Usage          `json:"usage"`
 	CreatedAt    time.Time      `json:"created_at"`
+	Beta         *BetaMetadata  `json:"beta,omitempty"`
 }
 
 // Usage represents the token usage information.
@@ -53,6 +54,47 @@ type MessageParams struct {
 	Metadata      map[string]interface{}              `json:"metadata,omitempty"`
 	StreamFunc    func(context.Context, []byte) error `json:"-"`
 	Tools         []Tool                              `json:"tools,omitempty"`
+	ToolChoice    *ToolChoice                         `json:"tool_choice,omitempty"`
+}
+
+type BetaMetadata struct {
+	CacheControl CacheControl `json:"cache_control,omitempty"`
+}
+
+type CacheControl string
+
+const (
+	CacheControlEphemeral CacheControl = "ephemeral"
+)
+
+type ToolChoice struct {
+	Type  string `json:"type"`
+	Tool  *Tool  `json:"tool,omitempty"`
+	Tools []Tool `json:"tools,omitempty"`
+}
+
+const (
+	ToolChoiceTypeAuto = "auto"
+	ToolChoiceTypeNone = "none"
+	ToolChoiceTypeTool = "tool"
+)
+
+// ComputerUseTool represents a computer use tool.
+type ComputerUseTool struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+}
+
+// BashTool represents a bash tool.
+type BashTool struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
+}
+
+// TextEditorTool represents a text editor tool.
+type TextEditorTool struct {
+	Type string `json:"type"`
+	Name string `json:"name"`
 }
 
 // IsStreaming returns true if the MessageParams is configured for streaming.
