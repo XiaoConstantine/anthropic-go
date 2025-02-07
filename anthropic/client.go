@@ -24,10 +24,11 @@ import (
 )
 
 const (
-	defaultBaseURL    = "https://api.anthropic.com/v1"
-	defaultAPIVersion = "2023-06-01"
-	defaultTimeout    = 120 * time.Second
-	envAPIKey         = "ANTHROPIC_API_KEY"
+	defaultBaseURL     = "https://api.anthropic.com/v1"
+	defaultAPIVersion  = "2023-06-01"
+	defaultTimeout     = 120 * time.Second
+	envAPIKey          = "ANTHROPIC_API_KEY"
+	embeddingsEndpoint = "/embeddings" // Add this line
 )
 
 // Client is the main struct for interacting with the Anthropic API.
@@ -127,6 +128,11 @@ func (c *Client) Messages() *MessagesService {
 	return &MessagesService{client: c}
 }
 
+// Embeddings returns a new EmbeddingsService
+func (c *Client) Embeddings() *EmbeddingsService {
+	return &EmbeddingsService{client: c}
+}
+
 // ModelsService handles operations related to models.
 type ModelsService struct {
 	client *Client
@@ -134,6 +140,10 @@ type ModelsService struct {
 
 // MessagesService handles operations related to messages.
 type MessagesService struct {
+	client *Client
+}
+
+type EmbeddingsService struct {
 	client *Client
 }
 

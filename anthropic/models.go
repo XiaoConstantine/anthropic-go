@@ -185,7 +185,8 @@ type Model struct {
 
 // Constants for available model IDs.
 const (
-	ModelHaiku  ModelID = "claude-3-haiku-20240307"
-	ModelSonnet ModelID = "claude-3-sonnet-20240229"
-	ModelOpus   ModelID = "claude-3-opus-20240229"
+	ModelHaiku            ModelID = "claude-3-haiku-20240307"
+	ModelSonnet           ModelID = "claude-3-sonnet-20240229"
+	ModelOpus             ModelID = "claude-3-opus-20240229"
+	ModelClaude3Embedding ModelID = "claude-3-embedding-20240229"
 )
