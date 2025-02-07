@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-// EmbeddingParams represents the parameters for creating embeddings
+// EmbeddingParams represents the parameters for creating embeddings.
 type EmbeddingParams struct {
 	Model    string                 `json:"model"`
 	Input    []string               `json:"input"`
@@ -17,7 +17,7 @@ type EmbeddingParams struct {
 	Metadata map[string]interface{} `json:"metadata,omitempty"`
 }
 
-// EmbeddingResponse represents the response from creating embeddings
+// EmbeddingResponse represents the response from creating embeddings.
 type EmbeddingResponse struct {
 	ID         string      `json:"id"`
 	Model      string      `json:"model"`
@@ -26,7 +26,7 @@ type EmbeddingResponse struct {
 	Usage      Usage       `json:"usage"`
 }
 
-// Create generates embeddings for the provided input texts
+// Create generates embeddings for the provided input texts.
 func (s *EmbeddingsService) Create(ctx context.Context, params *EmbeddingParams) (*EmbeddingResponse, error) {
 	url := s.client.baseURL + embeddingsEndpoint
 

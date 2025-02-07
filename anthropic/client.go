@@ -128,7 +128,7 @@ func (c *Client) Messages() *MessagesService {
 	return &MessagesService{client: c}
 }
 
-// Embeddings returns a new EmbeddingsService
+// Embeddings returns a new EmbeddingsService.
 func (c *Client) Embeddings() *EmbeddingsService {
 	return &EmbeddingsService{client: c}
 }
