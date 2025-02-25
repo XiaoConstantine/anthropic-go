@@ -150,6 +150,13 @@ func handleContentBlockStartEvent(event map[string]interface{}, response Message
 			Output:     getString(contentBlock, "output"),
 		}
 		response.Content = append(response.Content, ContentBlock{Type: contentType, ToolOutput: toolResult})
+	case "thinking":
+		if len(response.Content) <= index {
+			response.Content = append(response.Content, ContentBlock{
+				Type:     contentType,
+				Thinking: getString(contentBlock, "thinking"),
+			})
+		}
 	default:
 		return response, fmt.Errorf("unknown content block type: %s", contentType)
 	}
@@ -207,6 +214,15 @@ func handleContentBlockDeltaEvent(ctx context.Context, event map[string]interfac
 		}
 		if content, ok := delta["content"].(string); ok {
 			response.Content[index].ToolOutput.Output += content
+		}
+	case "thinking_delta":
+		if len(response.Content) <= index {
+			response.Content = append(response.Content, ContentBlock{
+				Type:     "thinking",
+				Thinking: getString(delta, "thinking"),
+			})
+		} else {
+			response.Content[index].Thinking += getString(delta, "thinking")
 		}
 	default:
 		return response, fmt.Errorf("unknown delta type: %s", deltaType)
