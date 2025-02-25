@@ -13,6 +13,7 @@ type ContentBlock struct {
 	Source     *Image      `json:"source,omitempty"`
 	ToolCall   *ToolCall   `json:"tool_call,omitempty"`
 	ToolOutput *ToolOutput `json:"tool_output,omitempty"`
+	Thinking   string      `json:"thinking,omitempty"`
 }
 
 // Image represents an image in a content block.
@@ -42,6 +43,24 @@ type Usage struct {
 	OutputTokens int `json:"output_tokens"`
 }
 
+// ThinkingConfig represents configuration for the thinking mode.
+type ThinkingConfig struct {
+	Type     string `json:"type"`
+	Enabled  bool   `json:"enabled,omitempty"`
+	Disabled bool   `json:"disabled,omitempty"`
+}
+
+// ThinkingBlock represents a thinking block in a message.
+type ThinkingBlock struct {
+	Type     string `json:"type"`
+	Thinking string `json:"thinking"`
+}
+
+// RedactedThinkingBlock represents a redacted thinking block.
+type RedactedThinkingBlock struct {
+	Type string `json:"type"`
+}
+
 // MessageParams represents the parameters for creating a message.
 type MessageParams struct {
 	Model         string                              `json:"model"`
@@ -55,10 +74,13 @@ type MessageParams struct {
 	StreamFunc    func(context.Context, []byte) error `json:"-"`
 	Tools         []Tool                              `json:"tools,omitempty"`
 	ToolChoice    *ToolChoice                         `json:"tool_choice,omitempty"`
+	Thinking      *ThinkingConfig                     `json:"thinking,omitempty"`
 }
 
 type BetaMetadata struct {
 	CacheControl CacheControl `json:"cache_control,omitempty"`
+
+	Thinking interface{} `json:"thinking,omitempty"`
 }
 
 type CacheControl string
@@ -186,7 +208,8 @@ type Model struct {
 // Constants for available model IDs.
 const (
 	ModelHaiku            ModelID = "claude-3-haiku-20240307"
-	ModelSonnet           ModelID = "claude-3-sonnet-20240229"
+	ModelSonnet           ModelID = "claude-3-7-sonnet-20250219"
 	ModelOpus             ModelID = "claude-3-opus-20240229"
 	ModelClaude3Embedding ModelID = "claude-3-embedding-20240229"
+	ModelSonnetOld        ModelID = "claude-3-5-sonnet-20240620"
 )

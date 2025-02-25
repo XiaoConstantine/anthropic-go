@@ -151,7 +151,8 @@ type EmbeddingsService struct {
 func (s *ModelsService) List() ([]Model, error) {
 	return []Model{
 		{ID: ModelHaiku, Name: "Claude 3 Haiku"},
-		{ID: ModelSonnet, Name: "Claude 3 Sonnet"},
+		{ID: ModelSonnet, Name: "Claude 3 Sonnet (3.7)"},
+		{ID: ModelSonnetOld, Name: "Claude 3 Sonnet Old (3.5)"},
 		{ID: ModelOpus, Name: "Claude 3 Opus"},
 	}, nil
 }
@@ -163,6 +164,8 @@ func GetModelID(name string) (ModelID, bool) {
 		return ModelHaiku, true
 	case "SONNET":
 		return ModelSonnet, true
+	case "SONNETOLD":
+		return ModelSonnetOld, true
 	case "OPUS":
 		return ModelOpus, true
 	default:
