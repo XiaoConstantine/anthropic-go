@@ -213,7 +213,7 @@ const (
 	ModelClaude3Embedding ModelID = "claude-3-embedding-20240229"
 	ModelSonnetOld        ModelID = "claude-3-5-sonnet-20240620"
 
-	// Claude 4 models
+	// Claude 4 models.
 	ModelClaude4Opus    ModelID = "claude-opus-4-20250514"
 	ModelClaude4Sonnet  ModelID = "claude-sonnet-4-20250514"
 	ModelClaude45Sonnet ModelID = "claude-sonnet-4-5-20250929"
